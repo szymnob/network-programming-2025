@@ -1,7 +1,3 @@
-// Szkielet serwera TCP/IPv4.
-//
-// Po podmienieniu SOCK_STREAM na SOCK_DGRAM staje się on szkieletem serwera
-// UDP/IPv4 korzystającego z gniazdek działających w trybie połączeniowym.
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
@@ -13,23 +9,35 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-int main(void)
+
+#define MSG "Hello, world!\r\n"
+
+int main(int argc, char *argv[])
 {
-    int lst_sock;   // gniazdko nasłuchujące
-    int clnt_sock;  // gniazdko połączone z bieżącym klientem
-    int rc;         // "rc" to skrót słów "result code"
-    ssize_t cnt;    // wyniki zwracane przez read() i write() są tego typu
+
+    int lst_sock;
+    int rc;
+    int clnt_sock;
+
+
+    if(argc != 2){
+        printf("Port number is required\n");
+        exit(1);
+    }
+
+    int port = atoi(argv[1]);
 
     lst_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (lst_sock == -1) {
+
+    if(lst_sock == -1){
         perror("socket");
-        return 1;
+        exit(1);
     }
 
     struct sockaddr_in addr = {
         .sin_family = AF_INET,
         .sin_addr = { .s_addr = htonl(INADDR_ANY) },
-        .sin_port = htons(20123)
+        .sin_port = htons(port)
     };
 
     rc = bind(lst_sock, (struct sockaddr *) & addr, sizeof(addr));
@@ -44,39 +52,26 @@ int main(void)
         return 1;
     }
 
-    bool keep_on_handling_clients = true;
-    while (keep_on_handling_clients) {
+    printf("Server listening on port %d...\n", port);
 
+    while(1){
         clnt_sock = accept(lst_sock, NULL, NULL);
-        if (clnt_sock == -1) {
+        if(clnt_sock == -1){
             perror("accept");
-            return 1;
+            exit(1);
         }
 
-        unsigned char buf[16];
+        printf("Client connected\n");
 
-        cnt = read(clnt_sock, buf, 16);
-        if (cnt == -1) {
-            perror("read");
-            return 1;
-        }
-        printf("read %zi bytes\n", cnt);
-
-        memcpy(buf, "pong", 4);
-
-        cnt = write(clnt_sock, buf, 4);
-        if (cnt == -1) {
-            perror("write");
-            return 1;
-        }
-        printf("wrote %zi bytes\n", cnt);
-
+        send(clnt_sock, MSG, sizeof(MSG), 0);
         rc = close(clnt_sock);
-        if (rc == -1) {
-            perror("close");
-            return 1;
-        }
 
+        if(rc == -1){
+            perror("close");
+            exit(1);
+        }
+        printf("Client disconnected\n");
+    
     }
 
     rc = close(lst_sock);
@@ -86,4 +81,5 @@ int main(void)
     }
 
     return 0;
+
 }
