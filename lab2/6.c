@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    
     for (ssize_t i = 0; i < received-1; i++) {
         if (isprint(buffer[i]) || buffer[i] == '\n' || buffer[i] == '\r' || buffer[i] == '\t') {
             putchar(buffer[i]);
