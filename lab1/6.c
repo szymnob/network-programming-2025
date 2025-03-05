@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     int wyjscie = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (wyjscie == -1) {
         perror("Błąd otwierania pliku docelowego");
-        close(wejscie);  // Zamykamy plik wejściowy, aby nie było wycieku zasobów
+        close(wejscie);
         exit(1);
     }
 

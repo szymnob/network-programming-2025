@@ -1,0 +1,13 @@
+1. Uruchomienie klienta netcat jako pierwszego powoduje od razu błąd connection refused, ponieważ serwer nie jest jeszcze uruchomiony.
+
+Zamknięcie klienta powoduje natychamistowe przerwanie działania serwera. Natomiast zamkniecie serwera dopiero po wyslaniu kilku wiadomosci powoduje blad broken pipe.
+
+2. W przypadku UDP, zamkniecie serwera jako pierwszego powoduje blad klienta connectyion refused od razu po probie wysłania czegoś. Zamknięcie klineta nie powoduje zadnego bledu serwera.
+
+jesli uruchomimy klient jako pierwszy nie dostejmey zadnego bledu az do czasu proby wyslania wiadomosci. Wtedy dostajemy błąd connection refused.
+
+3.
+-v - verbose wypisywanie komunikatow na ekran
+-l - listen - nasluchuje na okreslonym porcie
+-u - uzywa protokolu UDP
+-C - powoduje zamiana znaku nowej linnii na crlf
