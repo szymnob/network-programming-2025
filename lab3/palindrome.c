@@ -52,7 +52,7 @@ const char * count_palindromes(const char *input) {
     if (!has_words) {
         return "0/0\n";
     } else {
-        snprintf(response, sizeof(response), "%d/%d\n", palindrome_count, total_words);
+        snprintf(response, 10, "%d/%d\n", palindrome_count, total_words);
         return response;
     }
 }

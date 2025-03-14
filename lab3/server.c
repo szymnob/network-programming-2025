@@ -14,7 +14,7 @@
 #define PORT 2020
 
 
-int main(int argc, char *argv[])
+int main()
 {
 
     int sock;
