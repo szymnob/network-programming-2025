@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
 #define BUFFER_SIZE 1024
 #define MSG "Hello, world!\r\n"
@@ -54,6 +55,16 @@ int main(int argc, char *argv[])
     }
 
     printf("Sent empty datagram\n");
+
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))){
+        perror("Error");
+        close(sock);
+        exit(1);
+    }    
 
     ssize_t received = recvfrom(sock, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&server_addr, &addr_len);
 
