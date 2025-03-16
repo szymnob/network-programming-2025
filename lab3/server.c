@@ -60,12 +60,14 @@ int main()
             buffer[buflen - 1] = '\0';
         }
 
-        printf("Otrzymano pusty datagram od %s:%d\n",
+        printf("Received empyt datagram from: %s:%d\n",
                inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
         printf("Received: %s\n", buffer);
 
-        const char * response = count_palindromes(buffer);
+        char response[RESPONSE_SIZE];
+        count_palindromes(buffer, response);
+        
         sendto(sock, response, strlen(response), 0, (struct sockaddr *)&client_addr, addr_len);
         printf("Sent: %s\n", response);
     

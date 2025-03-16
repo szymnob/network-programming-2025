@@ -16,7 +16,7 @@ int is_palindrome(const char *start, const char *end) {
     return 1;
 }
 
-const char * count_palindromes(const char *input) {
+void count_palindromes(const char *input, char *result) {
     int total_words = 0;
     int palindrome_count = 0;
 
@@ -31,7 +31,8 @@ const char * count_palindromes(const char *input) {
             }
         } else {
             if (*ptr == ' ' && (ptr == input || *(ptr - 1) == ' ')) {
-                return "ERROR\n";
+                strcpy(result, "ERROR\n");
+                return;
             }
             if (word_start) {
                 total_words++;
@@ -47,12 +48,10 @@ const char * count_palindromes(const char *input) {
         }
     }
 
-    char *response = malloc(10);
 
     if (!has_words) {
-        return "0/0\n";
+        strcpy(result, "0/0\n");
     } else {
-        snprintf(response, 10, "%d/%d\n", palindrome_count, total_words);
-        return response;
+        snprintf(result, RESPONSE_SIZE, "%d/%d\n", palindrome_count, total_words);
     }
 }
