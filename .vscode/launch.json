@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/szymon/network-programming-2025/lab2",
-      "program": "/home/szymon/network-programming-2025/lab2/build/Debug/outDebug",
+      "cwd": "/home/szymon/network-programming-2025/lab3",
+      "program": "/home/szymon/network-programming-2025/lab3/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

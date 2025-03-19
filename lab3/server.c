@@ -60,9 +60,6 @@ int main()
             buffer[buflen - 1] = '\0';
         }
 
-        printf("Received empyt datagram from: %s:%d\n",
-               inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
         printf("Received: %s\n", buffer);
 
         char response[RESPONSE_SIZE];

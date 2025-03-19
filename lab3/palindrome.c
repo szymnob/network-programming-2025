@@ -51,6 +51,7 @@ void count_palindromes(const char *input, char *result) {
 
     if (!has_words) {
         strcpy(result, "0/0\n");
+        return;
     } else {
         snprintf(result, RESPONSE_SIZE, "%d/%d\n", palindrome_count, total_words);
     }
