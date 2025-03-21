@@ -24,7 +24,18 @@ void count_palindromes(const char *input, char *result) {
     const char *word_start = NULL;
     int has_words = 0;
 
+    //check if space on the end
+    if (strlen(input) > 0 && input[strlen(input) - 1] == ' ') {
+        strcpy(result, "ERROR\n");
+        return;
+    }
+
     for (const char *ptr = input; ; ptr++) {
+        //check for digit value
+        if(isdigit(*ptr)){
+            strcpy(result, "ERROR\n");
+            return;
+        }
         if (isalpha(*ptr)) {
             if (!word_start) {
                 word_start = ptr;

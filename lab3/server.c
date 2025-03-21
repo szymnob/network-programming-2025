@@ -45,7 +45,12 @@ int main()
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
+    char response[RESPONSE_SIZE];
+
     while(1){
+        memset(buffer, 0, sizeof(buffer));
+        memset(response, 0, sizeof(response));
+
         ssize_t received = recvfrom(sock, buffer, sizeof(buffer), 0,
                                     (struct sockaddr *)&client_addr, &addr_len);
 
@@ -53,17 +58,21 @@ int main()
             perror("recvfrom");
             continue;
         }
+        else if (received > BUFFER_SIZE) {
+            printf("Received message too long\n");
+            strncpy(response, "ERROR\n", sizeof(response));
+        }
+        else{
+            size_t buflen = strlen(buffer);
+            if (buflen > 0 && (buffer[buflen - 1] == '\n' || buffer[buflen - 1] == '\r')) {
+                buffer[buflen - 1] = '\0';
+            }
 
+            printf("Received: %s\n", buffer);
 
-        size_t buflen = strlen(buffer);
-        if (buflen > 0 && (buffer[buflen - 1] == '\n' || buffer[buflen - 1] == '\r')) {
-            buffer[buflen - 1] = '\0';
+            count_palindromes(buffer, response);
         }
 
-        printf("Received: %s\n", buffer);
-
-        char response[RESPONSE_SIZE];
-        count_palindromes(buffer, response);
         
         sendto(sock, response, strlen(response), 0, (struct sockaddr *)&client_addr, addr_len);
         printf("Sent: %s\n", response);
