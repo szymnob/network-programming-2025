@@ -12,7 +12,7 @@
 #include "palindrome.h"
 
 #define PORT 2020
-
+#define BUFFER_SIZE 1024
 
 int main()
 {
@@ -23,19 +23,20 @@ int main()
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-    if(sock == -1){
+    if (sock == -1)
+    {
         perror("socket");
         exit(1);
     }
 
     struct sockaddr_in addr = {
         .sin_family = AF_INET,
-        .sin_addr = { .s_addr = htonl(INADDR_ANY) },
-        .sin_port = htons(PORT)
-    };
+        .sin_addr = {.s_addr = htonl(INADDR_ANY)},
+        .sin_port = htons(PORT)};
 
-    rc = bind(sock, (struct sockaddr *) & addr, sizeof(addr));
-    if (rc == -1) {
+    rc = bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+    if (rc == -1)
+    {
         perror("bind");
         return 1;
     }
@@ -47,44 +48,59 @@ int main()
 
     char response[RESPONSE_SIZE];
 
-    while(1){
+    while (1)
+    {
         memset(buffer, 0, sizeof(buffer));
         memset(response, 0, sizeof(response));
 
         ssize_t received = recvfrom(sock, buffer, sizeof(buffer), 0,
                                     (struct sockaddr *)&client_addr, &addr_len);
 
-        if (received < 0) {
+        buffer[received] = '\0';
+
+        if (received < 0)
+        {
             perror("recvfrom");
             continue;
         }
-        else if (received > BUFFER_SIZE) {
+        else if (received > BUFFER_SIZE)
+        {
             printf("Received message too long\n");
             strncpy(response, "ERROR\n", sizeof(response));
         }
-        else{
+        else
+        {
+            //clean text in buffer and checks for spaces at the end
             size_t buflen = strlen(buffer);
-            if (buflen > 0 && (buffer[buflen - 1] == '\n' || buffer[buflen - 1] == '\r')) {
-                buffer[buflen - 1] = '\0';
+            size_t len = strlen(buffer);
+            while (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r' || buffer[len - 1] == '\t'))
+            {
+                buffer[len - 1] = '\0';
+                len--;
+            }
+
+            if (len > 0 && buffer[len-1] == ' ')
+            {
+                strncpy(response, "ERROR\n", sizeof(response));
+            }else{
+                count_palindromes(buffer, response);
             }
 
             printf("Received: %s\n", buffer);
 
-            count_palindromes(buffer, response);
+            
         }
 
-        
         sendto(sock, response, strlen(response), 0, (struct sockaddr *)&client_addr, addr_len);
         printf("Sent: %s\n", response);
-    
     }
 
     rc = close(sock);
-    if (rc == -1) {
+    if (rc == -1)
+    {
         perror("close");
         return 1;
     }
 
     return 0;
-
 }

@@ -24,11 +24,28 @@ void count_palindromes(const char *input, char *result) {
     const char *word_start = NULL;
     int has_words = 0;
 
-    //check if space on the end
-    if (strlen(input) > 0 && input[strlen(input) - 1] == ' ') {
+
+
+    //check if space in the beginning
+    if (input[0] == ' ') {
         strcpy(result, "ERROR\n");
         return;
     }
+
+    // //check if space on the end
+    // size_t len = strlen(input);
+    // if (len > 0) {
+    //     const char *end = input + len - 1;
+
+    //     while (end >= input && (*end == '\n' || *end == '\r')) {
+    //         end--;
+    //     }
+
+    //     if (*end == ' ') {
+    //         strcpy(result, "ERROR\n");
+    //         return;
+    //     }
+    // }
 
     for (const char *ptr = input; ; ptr++) {
         //check for digit value
@@ -41,7 +58,7 @@ void count_palindromes(const char *input, char *result) {
                 word_start = ptr;
             }
         } else {
-            if (*ptr == ' ' && (ptr == input || *(ptr - 1) == ' ')) {
+            if (*ptr == ' ' && *(ptr - 1) == ' ') {
                 strcpy(result, "ERROR\n");
                 return;
             }
