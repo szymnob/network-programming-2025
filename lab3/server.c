@@ -12,7 +12,7 @@
 #include "palindrome.h"
 
 #define PORT 2020
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 1025 // 1024 + 1 for null terminator
 
 int main()
 {
@@ -53,36 +53,31 @@ int main()
         memset(buffer, 0, sizeof(buffer));
         memset(response, 0, sizeof(response));
 
-        ssize_t received = recvfrom(sock, buffer, sizeof(buffer), 0,
+        ssize_t received = recvfrom(sock, buffer, sizeof(buffer)-1, 0,
                                     (struct sockaddr *)&client_addr, &addr_len);
 
-        buffer[received] = '\0';
 
         if (received < 0)
         {
             perror("recvfrom");
-            continue;
-        }
-        else if (received > BUFFER_SIZE)
-        {
-            printf("Received message too long\n");
-            strncpy(response, "ERROR\n", sizeof(response));
+            break;
         }
         else
         {
             //clean text in buffer and checks for spaces at the end
-            size_t buflen = strlen(buffer);
             size_t len = strlen(buffer);
-            while (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r' || buffer[len - 1] == '\t'))
-            {
-                buffer[len - 1] = '\0';
+
+            if(len>0 && buffer[len-1] == '\n'){
+                buffer[len-1] = '\0';
                 len--;
             }
 
-            if (len > 0 && buffer[len-1] == ' ')
+            //space at the end or beginning
+            if ((len > 0 && buffer[len-1] == ' ') || (len > 0 && buffer[0] == ' '))
             {
-                strncpy(response, "ERROR\n", sizeof(response));
-            }else{
+                strncpy(response, "ERROR", sizeof(response));
+            }
+            else{
                 count_palindromes(buffer, response);
             }
 
@@ -91,7 +86,12 @@ int main()
             
         }
 
-        sendto(sock, response, strlen(response), 0, (struct sockaddr *)&client_addr, addr_len);
+        ssize_t send = sendto(sock, response, strlen(response), 0, (struct sockaddr *)&client_addr, addr_len);
+        if (send < 0)
+        {
+            perror("sendto");
+            continue;
+        }
         printf("Sent: %s\n", response);
     }
 

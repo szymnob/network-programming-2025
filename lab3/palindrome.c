@@ -24,33 +24,10 @@ void count_palindromes(const char *input, char *result) {
     const char *word_start = NULL;
     int has_words = 0;
 
-
-
-    //check if space in the beginning
-    if (input[0] == ' ') {
-        strcpy(result, "ERROR\n");
-        return;
-    }
-
-    // //check if space on the end
-    // size_t len = strlen(input);
-    // if (len > 0) {
-    //     const char *end = input + len - 1;
-
-    //     while (end >= input && (*end == '\n' || *end == '\r')) {
-    //         end--;
-    //     }
-
-    //     if (*end == ' ') {
-    //         strcpy(result, "ERROR\n");
-    //         return;
-    //     }
-    // }
-
     for (const char *ptr = input; ; ptr++) {
-        //check for digit value
-        if(isdigit(*ptr)){
-            strcpy(result, "ERROR\n");
+        //check for invalid characters
+        if(!isalpha(*ptr) && *ptr != ' ' && *ptr != '\0'){
+            strcpy(result, "ERROR");
             return;
         }
         if (isalpha(*ptr)) {
@@ -59,7 +36,7 @@ void count_palindromes(const char *input, char *result) {
             }
         } else {
             if (*ptr == ' ' && *(ptr - 1) == ' ') {
-                strcpy(result, "ERROR\n");
+                strcpy(result, "ERROR");
                 return;
             }
             if (word_start) {
@@ -78,9 +55,9 @@ void count_palindromes(const char *input, char *result) {
 
 
     if (!has_words) {
-        strcpy(result, "0/0\n");
+        strcpy(result, "0/0");
         return;
     } else {
-        snprintf(result, RESPONSE_SIZE, "%d/%d\n", palindrome_count, total_words);
+        snprintf(result, RESPONSE_SIZE, "%d/%d", palindrome_count, total_words);
     }
 }
