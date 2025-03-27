@@ -14,6 +14,15 @@
 #define PORT 2020
 #define BUFFER_SIZE 1025 // 1024 + 1 for null terminator
 
+int has_nulls(const char *buffer, ssize_t received){
+    for (ssize_t i = 0; i < received; i++) {
+        if (buffer[i] == '\0') {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int main()
 {
 
@@ -56,13 +65,16 @@ int main()
         ssize_t received = recvfrom(sock, buffer, sizeof(buffer)-1, 0,
                                     (struct sockaddr *)&client_addr, &addr_len);
 
-
         if (received < 0)
         {
             perror("recvfrom");
             break;
         }
-        else
+
+        if(has_nulls(buffer, received)){
+            //\0 in request
+            strncpy(response, "ERROR", sizeof(response));
+        }else
         {
             //clean text in buffer and checks for spaces at the end
             size_t len = strlen(buffer);
@@ -82,7 +94,6 @@ int main()
             }
 
             printf("Received: %s\n", buffer);
-
             
         }
 
