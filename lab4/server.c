@@ -13,16 +13,40 @@
 #include "palindrome.h"
 
 #define PORT 2020
-#define BUFFER_SIZE 1025 // 1024 + 1 for null terminator
+#define BUFFER_SIZE 1024
 
-int has_nulls(const char *buffer, ssize_t received)
+
+//returns 1 if there is a non-null character after a null character, 0 otherwise
+int has_nulls(const char *buffer, ssize_t length)
 {
-    for (ssize_t i = 0; i < received; i++)
+    bool found_first_null = false;
+
+    for (ssize_t i = 0; i < length; i++)
     {
         if (buffer[i] == '\0')
         {
-            return 1;
+            found_first_null = true;
         }
+        else{
+            if (found_first_null)
+            {
+                return 1; // found a non-null character after a null character
+            }
+        }
+    }
+    return 0;
+}
+
+//add '\r\n' to the response, print response and send it to the client
+int send_response(int fd, char *response)
+{
+    strncat(response, "\r\n", sizeof(response) - strlen(response) - 1);
+    printf("Response: %s", response);
+    ssize_t sent = send(fd, response, strlen(response), 0);
+    if (sent == -1)
+    {
+        perror("send");
+        return -1;
     }
     return 0;
 }
@@ -32,7 +56,6 @@ int main()
 
     int srv_sock;
     int rc;
-    char buffer[BUFFER_SIZE];
 
     srv_sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -139,6 +162,13 @@ int main()
                     continue;
                 }
                 temp_buf[received] = '\0'; // null termintator buffer
+
+                if(has_nulls(temp_buf, received))
+                {
+                    send_response(fd, "ERROR");
+                    continue;
+                }
+
                 strncat(buf, temp_buf, BUFFER_SIZE - strlen(buf) - 1);
 
                 char *end;
@@ -148,27 +178,22 @@ int main()
                     char line[BUFFER_SIZE] = {0};
                     strncpy(line, buf, sizeof(line) - 1); // copy part of the buffer termineted by \r\n
 
-                    if (has_nulls(line, strlen(line)))
+                    size_t len = strlen(line);
+                    if ((len > 0 && line[len - 1] == ' ') || line[0] == ' ')
                     {
                         strncpy(response, "ERROR", sizeof(response));
                     }
                     else
                     {
-                        size_t len = strlen(line);
-                        if ((len > 0 && line[len - 1] == ' ') || line[0] == ' ')
-                        {
-                            strncpy(response, "ERROR", sizeof(response));
-                        }
-                        else
-                        {
-                            // count palindromes in the line
-                            count_palindromes(line, response);
-                            strncat(response, "\r\n", sizeof(response) - strlen(response) - 1);
-                        }
+                        // count palindromes in the line
+                        count_palindromes(line, response);
                     }
-
-                    printf("Response: %s", response);
-                    send(fd, response, strlen(response), 0);
+                    
+                    //add '\r\n' to the response
+                    // strncat(response, "\r\n", sizeof(response) - strlen(response) - 1);
+                    // printf("Response: %s", response);
+                    // send(fd, response, strlen(response), 0);
+                    send_response(fd, response);
 
                     // move the rest of the buffer after processing the line
                     char *rest = end + 2;

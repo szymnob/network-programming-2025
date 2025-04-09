@@ -3,3 +3,4 @@ test/*
 output/*
 *.o
 lab3/server
+lab4/server
