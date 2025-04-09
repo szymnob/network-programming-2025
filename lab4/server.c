@@ -16,22 +16,11 @@
 #define BUFFER_SIZE 1024
 
 
-//returns 1 if there is a non-null character after a null character, 0 otherwise
-int has_nulls(const char *buffer, ssize_t length)
-{
-    bool found_first_null = false;
-
-    for (ssize_t i = 0; i < length; i++)
-    {
-        if (buffer[i] == '\0')
-        {
-            found_first_null = true;
-        }
-        else{
-            if (found_first_null)
-            {
-                return 1; // found a non-null character after a null character
-            }
+//returns 1 if there is a null character in the buffer, 0 otherwise
+int has_nulls(const char *buffer, ssize_t length){
+    for (ssize_t i = 0; i < length; i++) {
+        if (buffer[i] == '\0') {
+            return 1;
         }
     }
     return 0;
@@ -90,8 +79,13 @@ int main()
     FD_SET(srv_sock, &sock_fds);
     int max_fd = srv_sock;
 
-    char client_buffer[FD_SETSIZE][BUFFER_SIZE] = {{0}};
+    char client_buffer[FD_SETSIZE][BUFFER_SIZE*2] = {{0}};
     char response[RESPONSE_SIZE];
+
+    //data receved from client
+    char temp_buf[BUFFER_SIZE] = {0};
+    //buffer to store the line to be processed
+    char line[BUFFER_SIZE] = {0};
 
     while (1)
     {
@@ -144,8 +138,8 @@ int main()
             // handling connected client
             else
             {
+                memset(temp_buf, 0, sizeof(temp_buf));
                 char *buf = client_buffer[fd];
-                char temp_buf[BUFFER_SIZE] = {0};
                 ssize_t received = recv(fd, temp_buf, sizeof(temp_buf) - 1, 0);
                 if (received < 0)
                 {
@@ -165,7 +159,8 @@ int main()
 
                 if(has_nulls(temp_buf, received))
                 {
-                    send_response(fd, "ERROR");
+                    strncpy(response, "ERROR", sizeof(response));
+                    send_response(fd, response);
                     continue;
                 }
 
@@ -174,8 +169,8 @@ int main()
                 char *end;
                 while ((end = strstr(buf, "\r\n")) != NULL)
                 {
+                    memset(line, 0, sizeof(line));
                     *end = '\0';
-                    char line[BUFFER_SIZE] = {0};
                     strncpy(line, buf, sizeof(line) - 1); // copy part of the buffer termineted by \r\n
 
                     size_t len = strlen(line);
@@ -189,10 +184,6 @@ int main()
                         count_palindromes(line, response);
                     }
                     
-                    //add '\r\n' to the response
-                    // strncat(response, "\r\n", sizeof(response) - strlen(response) - 1);
-                    // printf("Response: %s", response);
-                    // send(fd, response, strlen(response), 0);
                     send_response(fd, response);
 
                     // move the rest of the buffer after processing the line
