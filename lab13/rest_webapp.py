@@ -70,11 +70,80 @@ a częściowo w metodach handle_table() i handle_item().
         if self.env['PATH_INFO'] == '/osoby':
             self.handle_table()
             return
+        if self.env['PATH_INFO'] == '/osoby/search':
+            self.handle_search_osoby()
+            return
         m = re.search('^/osoby/(?P<id>[0-9]+)$', self.env['PATH_INFO'])
         if m is not None:
             self.handle_item(m.group('id'))
             return
+
+        if self.env['PATH_INFO'] == '/psy':
+            self.handle_dogs_table()
+            return
+        if self.env['PATH_INFO'] == '/psy/search':
+            self.handle_search_psy()
+            return
+        m = re.search('^/psy/(?P<id>[0-9]+)$', self.env['PATH_INFO'])
+        if m is not None:
+            self.handle_dog_item(m.group('id'))
+            return
+
         self.failure('404 Not Found')
+
+    def handle_search_osoby(self):
+        '''
+        Obsługa wyszukiwania osób po imieniu i nazwisku.
+        '''
+        if self.env['REQUEST_METHOD'] == 'GET':
+            qs = self.parse_query_string(self.env['QUERY_STRING'])
+            imie = qs.get('imie')
+            nazwisko = qs.get('nazwisko')
+            colnames, rows = self.sql_select_osoby(imie=imie, nazwisko=nazwisko)
+            self.send_rows(colnames, rows)
+
+    def handle_search_psy(self):
+        '''
+        Obsługa wyszukiwania osób po imieniu i nazwisku.
+        '''
+        if self.env['REQUEST_METHOD'] == 'GET':
+            qs = self.parse_query_string(self.env['QUERY_STRING'])
+            print(qs)
+            imie = qs.get('imie')
+            rasa = qs.get('rasa')
+            colnames, rows = self.sql_select_psy(imie=imie, rasa=rasa)
+            self.send_rows(colnames, rows)
+
+    def parse_query_string(self, qs_raw):
+        '''
+        Parsuje surowy ciąg zapytania (query string) z adresu URL na imie i nazwisko
+        '''
+        result = {}
+        print(qs_raw)
+        if qs_raw:
+            pairs = qs_raw.split('&')
+            for pair in pairs:
+                if '=' in pair:
+                    key, val = pair.split('=', 1)
+                    result[key] = val
+        return result
+
+    def handle_dogs_table(self):
+        '''
+Obsługa zapytań odnoszących się do tabeli "psy" traktowanej jako całość.
+Można ją pobrać, albo można dodać do niej nowy wiersz.
+'''
+        if self.env['REQUEST_METHOD'] == 'GET':
+            colnames, rows = self.sql_select_psy()
+            self.send_rows(colnames, rows)
+        elif self.env['REQUEST_METHOD'] == 'POST':
+            colnames, vals = self.read_tsv()
+            q = 'INSERT INTO psy (' + ', '.join(colnames) + ') VALUES (' + ', '.join(['?' for _ in vals]) + ')'
+            dog_id = self.sql_modify(q, vals)
+            colnames, rows = self.sql_select_psy(id=dog_id)
+            self.send_rows(colnames, rows)
+        else:
+            self.failure('501 Not Implemented')
 
     def handle_table(self):
         '''
@@ -82,15 +151,39 @@ Obsługa zapytań odnoszących się do tabeli "osoby" traktowanej jako całość
 Można ją pobrać, albo można dodać do niej nowy wiersz.
 '''
         if self.env['REQUEST_METHOD'] == 'GET':
-            colnames, rows = self.sql_select()
+            colnames, rows = self.sql_select_osoby()
             self.send_rows(colnames, rows)
         elif self.env['REQUEST_METHOD'] == 'POST':
             colnames, vals = self.read_tsv()
             q = 'INSERT INTO osoby (' + ', '.join(colnames) + ') VALUES ('
             q += ', '.join(['?' for v in vals]) + ')'
             id = self.sql_modify(q, vals)
-            colnames, rows = self.sql_select(id)
+            colnames, rows = self.sql_select_osoby(id=id)
             self.send_rows(colnames, rows)
+        else:
+            self.failure('501 Not Implemented')
+
+    def handle_dog_item(self, id):
+        '''
+        Obsluga zapytan wiersza w tabeli "psy". Moozna go pobrać, zmodyfikować lub usunąć.
+        :param id:
+        :return:
+        '''
+        if self.env['REQUEST_METHOD'] == 'GET':
+            colnames, rows = self.sql_select_psy(id=id)
+            if len(rows) == 0:
+                self.failure('404 Not Found')
+            else:
+                self.send_rows(colnames, rows)
+        elif self.env['REQUEST_METHOD'] == 'PUT':
+            colnames, vals = self.read_tsv()
+            q = 'UPDATE psy SET ' + ', '.join([c + ' = ?' for c in colnames]) + ' WHERE id = ?'
+            self.sql_modify(q, vals + [id])
+            colnames, rows = self.sql_select_psy(id=id)
+            self.send_rows(colnames, rows)
+        elif self.env['REQUEST_METHOD'] == 'DELETE':
+            q = 'DELETE FROM psy WHERE id = ?'
+            self.sql_modify(q, [id])
         else:
             self.failure('501 Not Implemented')
 
@@ -100,7 +193,7 @@ Obsługa zapytań odnoszących się do konkretnego wiersza w tabeli "osoby".
 Można go pobrać, zmodyfikować, albo usunąć.
 '''
         if self.env['REQUEST_METHOD'] == 'GET':
-            colnames, rows = self.sql_select(id)
+            colnames, rows = self.sql_select_osoby(id)
             if len(rows) == 0:
                 self.failure('404 Not Found')
             else:
@@ -111,7 +204,7 @@ Można go pobrać, zmodyfikować, albo usunąć.
             q += ', '.join([c + ' = ?' for c in colnames])
             q += ' WHERE id = ' + str(id)
             self.sql_modify(q, vals)
-            colnames, rows = self.sql_select(id)
+            colnames, rows = self.sql_select_osoby(id)
             self.send_rows(colnames, rows)
         elif self.env['REQUEST_METHOD'] == 'DELETE':
             q = 'DELETE FROM osoby WHERE id = ' + str(id)
@@ -136,13 +229,52 @@ Można go pobrać, zmodyfikować, albo usunąć.
         self.headers = [ ('Content-Type',
                 'text/tab-separated-values; charset=UTF-8') ]
 
-    def sql_select(self, id = None):
+    def sql_select_psy(self, id=None, imie=None, rasa=None):
+        query = 'SELECT * FROM psy'
+        where_params = []
+        values = []
+
+        if id is not None:
+            where_params.append('id = ?')
+            values.append(id)
+        if imie is not None:
+            where_params.append('imie = ?')
+            values.append(imie)
+        if rasa is not None:
+            where_params.append('rasa = ?')
+            values.append(rasa)
+
+        if where_params:
+            query += ' WHERE ' + ' AND '.join(where_params)
+
+        return self.sql_select(query, values)
+    
+    def sql_select_osoby(self, id = None, imie = None, nazwisko = None):
+        query = 'SELECT * FROM osoby'
+        where_params = []
+        values = []
+
+        if id is not None:
+            where_params.append('id = ?')
+            values.append(id)
+        if imie is not None:
+            where_params.append('imie = ?')
+            values.append(imie)
+        if nazwisko is not None:
+            where_params.append('nazwisko = ?')
+            values.append(nazwisko)
+
+        if where_params:
+            query += ' WHERE ' + ' AND '.join(where_params)
+
+        return self.sql_select(query, values)
+    
+    def sql_select(self, query, values):
         conn = sqlite3.connect(plik_bazy)
         crsr = conn.cursor()
-        query = 'SELECT * FROM osoby'
-        if id is not None:
-            query += ' WHERE id = ' + str(id)
-        crsr.execute(query)
+
+
+        crsr.execute(query, values)
         colnames = [ d[0] for d in crsr.description ]
         rows = crsr.fetchall()
         crsr.close()
@@ -151,6 +283,7 @@ Można go pobrać, zmodyfikować, albo usunąć.
 
     def sql_modify(self, query, params = None):
         conn = sqlite3.connect(plik_bazy)
+        conn.execute('PRAGMA foreign_keys = ON')
         crsr = conn.cursor()
         if params is None:
             crsr.execute(query)
